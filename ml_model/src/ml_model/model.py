@@ -4,6 +4,7 @@ import time
 import logging
 import os
 import pickle
+import argparse
 
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import accuracy_score
@@ -31,7 +32,7 @@ class My_Classifier_Model:
 
         self.classifiers = {
             "LGBM": LGBMClassifier(
-                learning_rate=0.028924692071347728, max_depth=13, n_estimators=533, num_leaves=10, random_state=RANDOM_STATE
+                learning_rate=0.00974924788169623, max_depth=9, n_estimators=474, num_leaves=19, random_state=RANDOM_STATE
             ),
         }
 
@@ -240,12 +241,25 @@ class My_Classifier_Model:
         except:
             return None
 
-# Пример использования:
+
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Train and evaluate a model.')
+    subparsers = parser.add_subparsers(dest='command', help='Command to execute')
+
+    train_parser = subparsers.add_parser('train', help='Train the model')
+    train_parser.add_argument('--dataset', required=True, help='Path to the training dataset (train.csv)')
+
+    predict_parser = subparsers.add_parser('predict', help='Make predictions with the model')
+    predict_parser.add_argument('--dataset', required=True, help='Path to the evaluation dataset (test.csv)')
+
+    args = parser.parse_args()
+
     model = My_Classifier_Model()
 
-    # Обучение модели
-    model.train("train")  # Обучение на train.csv
+    if args.command == 'train':
+        model.train(args.dataset)
+    elif args.command == 'predict':
+        model.predict(args.dataset)
+    else:
+        print("Invalid command. Use 'train' or 'predict'.")
 
-    # Предсказание
-    model.predict("test") # Предсказание на test.csv
