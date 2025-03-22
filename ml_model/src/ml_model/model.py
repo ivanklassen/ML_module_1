@@ -36,7 +36,7 @@ class My_Classifier_Model:
 
         self.classifiers = {
             "LGBM": LGBMClassifier(
-                learning_rate=0.00974924788169623, max_depth=9, n_estimators=474, num_leaves=19, random_state=RANDOM_STATE
+                learning_rate=0.029721525246500357, max_depth=11, n_estimators=431, num_leaves=10, random_state=RANDOM_STATE
             ),
         }
 
@@ -56,6 +56,8 @@ class My_Classifier_Model:
             train = pd.read_csv(f"{dataset_name}.csv")
             train_y = train[["Transported"]].astype(int)
 
+
+            #Feature engineering
             train['Group'] = train['PassengerId'].apply(lambda x: x.split('_')[0])
             train['GroupSize'] = train.groupby('Group')['PassengerId'].transform('count')
             train.drop('Group', axis=1, inplace=True)
@@ -79,6 +81,7 @@ class My_Classifier_Model:
 
             train = train.drop(["RoomService", "FoodCourt", "ShoppingMall", "Spa", "VRDeck"], axis=1)
 
+            #Post processing
             num_cols = [cname for cname in train.columns if train[cname].dtype in ["int64", "float64"]]
             cat_cols = [cname for cname in train.columns if train[cname].dtype == "object"]
 
@@ -105,6 +108,8 @@ class My_Classifier_Model:
             y = train_y.values
             preds_train = np.zeros(train.shape[0])
 
+
+            #Кросс-валидация
             cv = StratifiedKFold(n_splits=FOLDS, shuffle=True, random_state=0)
             score = 0
 
@@ -152,6 +157,7 @@ class My_Classifier_Model:
             test = pd.read_csv(f"{dataset_name}.csv")
             test_y = test[["PassengerId"]]
 
+            #Feature engineering
             test['Group'] = test['PassengerId'].apply(lambda x: x.split('_')[0])
             test['GroupSize'] = test.groupby('Group')['PassengerId'].transform('count')
             test = test.drop('Group', axis=1)
@@ -175,11 +181,13 @@ class My_Classifier_Model:
 
             test = test.drop(["RoomService", "FoodCourt", "ShoppingMall", "Spa", "VRDeck"], axis=1)
 
+            #Преобразование тестовых данных
             test = self.preprocessor.transform(test)
+            #Предсказание
             probabilities = self.model.predict_proba(test)[:, 1]
-
             predictions = (probabilities > 0.5).astype(bool)
 
+            #Сохранение результатов
             submission = pd.DataFrame({'PassengerId': test_y['PassengerId'], 'Transported': predictions})
             submission.to_csv(RESULTS_FILE, index=False)
 
@@ -193,6 +201,7 @@ class My_Classifier_Model:
             logging.exception("Произошла ошибка во время предсказания:")
             print(f"Произошла ошибка: {e}")
 
+    #Функция сохранения обученной модели
     def save_model(self):
         os.makedirs(MODEL_DIR, exist_ok=True)
 
@@ -204,7 +213,7 @@ class My_Classifier_Model:
             pickle.dump(self.preprocessor, file)
         logging.info(f"Препроцессор сохранен в {MODEL_DIR}preprocessor.pkl")
 
-
+    #Функция загрузки обученной модели
     def load_model(self):
         try:
             with open(os.path.join(MODEL_DIR, 'model.pkl'), 'rb') as file:
@@ -223,6 +232,7 @@ class My_Classifier_Model:
              logging.exception(f"Ошибка при загрузке модели: {e}")
              raise Exception(f"Ошибка при загрузке модели: {e}")
 
+    #Вспомогательная функция для извлечения стороны каюты
     def _get_cabin_side(self, cabin):
 
         if pd.isna(cabin):
@@ -235,6 +245,7 @@ class My_Classifier_Model:
         else:
             return None
 
+    #Вспомогательная функция для извлечения палубы каюты
     def _get_cabin_deck(self, cabin):
         if pd.isna(cabin):
             return None
