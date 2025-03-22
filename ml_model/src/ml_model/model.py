@@ -15,16 +15,20 @@ from lightgbm import LGBMClassifier
 
 print(f"Текущий рабочий каталог: {os.getcwd()}")
 
-# Константы
 MODEL_DIR = "./model/"
 RESULTS_FILE = "./data/results.csv"
 LOG_FILE = "./data/log_file.log"
 FOLDS = 5
 RANDOM_STATE = 0
 
-# # Настройка логирования
-# logging.basicConfig(filename=LOG_FILE, level=logging.INFO,
-#                     format='%(asctime)s - %(levelname)s - %(message)s')
+# Настройка логирования
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    encoding='utf-8'
+)
+
 
 
 class My_Classifier_Model:
@@ -42,10 +46,10 @@ class My_Classifier_Model:
     def train(self, dataset_name):
 
         train_file_path = f"{dataset_name}.csv"
-        #logging.info(f"Попытка загрузить train.csv из: {train_file_path}")
+        logging.info(f"Попытка загрузить train.csv из: {train_file_path}")
         print(f"Попытка загрузить train.csv из: {train_file_path}") 
 
-        #logging.info(f"Начало обучения модели на наборе данных: {dataset_name}")
+        logging.info(f"Начало обучения модели на наборе данных: {dataset_name}")
         start_time = time.time()
 
         try:
@@ -98,7 +102,6 @@ class My_Classifier_Model:
 
             train = self.preprocessor.fit_transform(train)
 
-            FOLDS = 5
             y = train_y.values
             preds_train = np.zeros(train.shape[0])
 
@@ -115,33 +118,33 @@ class My_Classifier_Model:
                 preds_train += clf.predict_proba(train)[:, 1]
                 score += clf.score(X_valid, y_valid)
 
-                #logging.info(f"Fold {fold + 1} Accuracy: {clf.score(X_valid, y_valid):.4f}") #Логируем точность
+                logging.info(f"Fold {fold + 1} Accuracy: {clf.score(X_valid, y_valid):.4f}") #Логируем точность
                 print(f"Fold {fold + 1} Accuracy: {clf.score(X_valid, y_valid):.4f}")
                 
             score = score / FOLDS
-            #logging.info(f"Средняя точность по кросс-валидации: {score:.4f}")
+            logging.info(f"Средняя точность по кросс-валидации: {score:.4f}")
             print(f"Средняя точность по кросс-валидации: {score:.4f}")
           
 
             self.model = self.classifiers["LGBM"]  
             self.save_model()
-            #logging.info("Модель успешно обучена и сохранена.")
+            logging.info("Модель успешно обучена и сохранена.")
 
             end_time = time.time()
             training_time = end_time - start_time
-            #logging.info(f"Время обучения: {training_time:.2f} секунд")
+            logging.info(f"Время обучения: {training_time:.2f} секунд")
 
         except FileNotFoundError:
-            #logging.error(f"Файл {dataset_name}.csv не найден.")
+            logging.error(f"Файл {dataset_name}.csv не найден.")
             print(f"Ошибка: Файл {dataset_name}.csv не найден.")
         except Exception as e:
-            #logging.exception("Произошла ошибка во время обучения:")
+            logging.exception("Произошла ошибка во время обучения:")
             print(f"Произошла ошибка: {e}")
 
 
 
     def predict(self, dataset_name):
-        #logging.info(f"Начало предсказания на наборе данных: {dataset_name}")
+        logging.info(f"Начало предсказания на наборе данных: {dataset_name}")
 
         try:
             self.load_model() 
@@ -180,14 +183,14 @@ class My_Classifier_Model:
             submission = pd.DataFrame({'PassengerId': test_y['PassengerId'], 'Transported': predictions})
             submission.to_csv(RESULTS_FILE, index=False)
 
-            #logging.info(f"Предсказания сохранены в файл: {RESULTS_FILE}")
+            logging.info(f"Предсказания сохранены в файл: {RESULTS_FILE}")
             print(f"Предсказания сохранены в файл: {RESULTS_FILE}")
 
         except FileNotFoundError:
-            #logging.error(f"Файл {dataset_name}.csv или файлы модели не найдены.")
+            logging.error(f"Файл {dataset_name}.csv или файлы модели не найдены.")
             print(f"Ошибка: Файл {dataset_name}.csv или файлы модели не найдены.")
         except Exception as e:
-            #logging.exception("Произошла ошибка во время предсказания:")
+            logging.exception("Произошла ошибка во время предсказания:")
             print(f"Произошла ошибка: {e}")
 
     def save_model(self):
@@ -195,29 +198,29 @@ class My_Classifier_Model:
 
         with open(os.path.join(MODEL_DIR, 'model.pkl'), 'wb') as file:
             pickle.dump(self.model, file)
-        #logging.info(f"Модель сохранена в {MODEL_DIR}model.pkl")
+        logging.info(f"Модель сохранена в {MODEL_DIR}model.pkl")
 
         with open(os.path.join(MODEL_DIR, 'preprocessor.pkl'), 'wb') as file:
             pickle.dump(self.preprocessor, file)
-        #logging.info(f"Препроцессор сохранен в {MODEL_DIR}preprocessor.pkl")
+        logging.info(f"Препроцессор сохранен в {MODEL_DIR}preprocessor.pkl")
 
 
     def load_model(self):
         try:
             with open(os.path.join(MODEL_DIR, 'model.pkl'), 'rb') as file:
                 self.model = pickle.load(file)
-            #logging.info(f"Модель загружена из {MODEL_DIR}model.pkl")
+            logging.info(f"Модель загружена из {MODEL_DIR}model.pkl")
 
             with open(os.path.join(MODEL_DIR, 'preprocessor.pkl'), 'rb') as file:
                 self.preprocessor = pickle.load(file)
-            #logging.info(f"Препроцессор загружен из {MODEL_DIR}preprocessor.pkl")
+            logging.info(f"Препроцессор загружен из {MODEL_DIR}preprocessor.pkl")
 
 
         except FileNotFoundError:
-            #logging.error("Файлы модели не найдены. Запустите обучение модели.")
+            logging.error("Файлы модели не найдены. Запустите обучение модели.")
             raise FileNotFoundError("Файлы модели не найдены. Запустите обучение модели.")
         except Exception as e:
-             #logging.exception(f"Ошибка при загрузке модели: {e}")
+             logging.exception(f"Ошибка при загрузке модели: {e}")
              raise Exception(f"Ошибка при загрузке модели: {e}")
 
     def _get_cabin_side(self, cabin):
